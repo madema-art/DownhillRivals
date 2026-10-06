@@ -6,7 +6,7 @@ fs.mkdirSync('shots', { recursive: true });
 const times = (process.argv[2] || '8,16,23,30,40,55,66').split(',').map(Number);
 const server = spawn('npx', ['vite', 'preview', '--port', '4173', '--strictPort'], { stdio: 'ignore' });
 await new Promise((r) => setTimeout(r, 2000));
-const browser = await chromium.launch({ executablePath: '/opt/pw-browsers/chromium-1194/chrome-linux/chrome', args: ['--use-angle=swiftshader', '--use-gl=angle', '--enable-unsafe-swiftshader', '--no-sandbox'] });
+const browser = await chromium.launch({ executablePath: process.env.CHROME || (fs.existsSync('/opt/pw-browsers/chromium-1194/chrome-linux/chrome') ? '/opt/pw-browsers/chromium-1194/chrome-linux/chrome' : undefined), args: ['--use-angle=swiftshader', '--use-gl=angle', '--enable-unsafe-swiftshader', '--no-sandbox'] });
 const page = await browser.newPage({ viewport: { width: 960, height: 540 } });
 page.on('pageerror', (e) => console.log('PAGEERR', e.message));
 await page.goto('http://localhost:4173/?auto=1'); await page.waitForFunction(() => window.__game && window.__game.state().state === 'racing', null, { timeout: 60000 });
