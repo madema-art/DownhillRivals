@@ -36,6 +36,23 @@ jobs:
     steps:
       - id: deployment
         uses: actions/deploy-pages@v4
+  verify-live:
+    needs: deploy
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: npm }
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - name: Browser test against the LIVE deployed URL
+        run: |
+          curl -sSf -o /dev/null -w "live http %{http_code}\n" "https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/"
+          GAME_URL="https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/" npm run e2e
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with: { name: live-shots, path: shots }
   e2e:
     runs-on: ubuntu-latest
     timeout-minutes: 15
