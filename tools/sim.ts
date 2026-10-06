@@ -18,7 +18,7 @@ for (let n = 0; n < N; n++) {
     race.step(); t += 1 / 120; tick++;
     if (race.state === 'racing' && tick % 120 === 0) {
       const ss = race.riders.map((r) => r.s); const sorted = ss.slice().sort((a, b) => b - a);
-      if (sorted[0] < FINISH_S - 100) { spreadSum += sorted[0] - sorted[5]; spreadN++; }
+      if (sorted[0] < FINISH_S - 100) { for (const x of ss) { if (ss.some((y) => y !== x && Math.abs(y - x) < 25)) (totals as any).packHit = ((totals as any).packHit || 0) + 1; (totals as any).packTot = ((totals as any).packTot || 0) + 1; } spreadSum += sorted[0] - sorted[5]; spreadN++; }
     }
     for (const r of race.riders) {
       const sp = race.course.split;
@@ -41,6 +41,7 @@ const f = (x: number) => (x / N).toFixed(2);
 const avg = (a: number[]) => a.length ? (a.reduce((x, y) => x + y, 0) / a.length).toFixed(2) : 'n/a';
 console.log(`\n${N} races | winner avg ${f(totals.time)}s | finishers/race ${f(totals.finished)} | crashes/race ${f(totals.crashes)} | shoves/race ${f(totals.shoves)} | bumps/race ${f(totals.bumps)} | tricks/race ${f(totals.tricks)} | wallHits/race ${f(totals.walls)} | longest air ${totals.airMax.toFixed(2)}s`);
 console.log(`first 22s per race: bumps ${f((totals as any).e_bump)} shoves ${f((totals as any).e_shove)} bigAirTakeoffs ${f((totals as any).e_air)} crashes ${f((totals as any).e_crash)}`);
+console.log(`riders with a rival within 25m: ${(100 * (totals as any).packHit / (totals as any).packTot).toFixed(0)}% of the time`);
 console.log('crash causes', JSON.stringify(allCauses));
 console.log(`pack spread first->last avg ${(totals.spread / totals.packN).toFixed(1)}m | wins ${JSON.stringify(totals.wins)}`);
 console.log(`split zone time: shortcut n=${totals.shortTimes.length} avg ${avg(totals.shortTimes)}s | main n=${totals.mainTimes.length} avg ${avg(totals.mainTimes)}s | stuck ${totals.stuck}`);

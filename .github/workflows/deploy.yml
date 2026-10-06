@@ -8,7 +8,7 @@ permissions:
   pages: write
   id-token: write
 concurrency:
-  group: pages
+  group: pages-${{ github.ref }}
   cancel-in-progress: true
 jobs:
   build:
@@ -22,11 +22,6 @@ jobs:
         run: npm run sim -- 4
       - name: Typecheck + production build
         run: npm run build
-      - name: Browser end-to-end test (production build)
-        run: |
-          npx playwright install --with-deps chromium
-          npm run e2e
-        continue-on-error: true
       - uses: actions/configure-pages@v5
         with: { enablement: true }
         continue-on-error: true
@@ -41,3 +36,17 @@ jobs:
     steps:
       - id: deployment
         uses: actions/deploy-pages@v4
+  e2e:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: npm }
+      - run: npm ci
+      - run: npm run build
+      - run: npx playwright install --with-deps chromium
+      - run: npm run e2e
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with: { name: e2e-shots, path: shots }
