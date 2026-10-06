@@ -91,23 +91,6 @@ export function aiThink(r: Rider, inp: RiderInput, ctx: Ctx, dt: number) {
     }
   }
 
-  // obstacles
-  let brakeNeed = 0;
-  if (a.lateT <= 0) c.obstaclesIn(r.s + 2, r.s + 14 + r.v * 0.55, (o) => {
-    const clear = o.r + 2.1;
-    const dsO = o.s - r.s;
-    if (dsO < 0) return;
-    if (Math.abs(o.l - tl) < clear || (Math.abs(o.l - r.l) < clear && dsO < 22)) {
-      const side = o.l > r.l ? -1 : 1;
-      const cand = o.l + (side * -1 * -1) * 0 + (o.l > tl ? -clear - 0.4 : clear + 0.4);
-      const alt = o.l > tl ? o.l + clear + 0.4 : o.l - clear - 0.4;
-      // pick the side with more room
-      const pick = (cand > lim[0] + 1.2 && cand < lim[1] - 1.2) ? cand : alt;
-      tl = pick;
-      if (dsO < 9 && Math.abs(o.l - r.l) < o.r + 1.4) brakeNeed = Math.max(brakeNeed, 0.5);
-    }
-  }); else a.lateT -= dt;
-
   // other riders: pass / defend / contest
   let blocker: Rider | null = null, bd = 99, behind: Rider | null = null, bb = 99;
   for (const o of ctx.riders) {
@@ -141,6 +124,31 @@ export function aiThink(r: Rider, inp: RiderInput, ctx: Ctx, dt: number) {
   }
   c.lateralLimits(r.s, r.l, lim);
   tl = clamp(tl, lim[0] + 1.5, lim[1] - 1.5);
+  // obstacles: merge blocked lateral intervals ahead, steer to nearest free gap
+  let brakeNeed = 0;
+  if (a.lateT <= 0) {
+    const iv: [number, number][] = [];
+    c.obstaclesIn(r.s + 2, r.s + 16 + r.v * 0.6, (o) => {
+      if (o.s < r.s) return;
+      const m = o.r + 1.7; iv.push([o.l - m, o.l + m]);
+      if (o.s - r.s < 9 && Math.abs(o.l - r.l) < o.r + 1.5) brakeNeed = Math.max(brakeNeed, 0.4);
+    });
+    if (iv.length) {
+      iv.sort((x, y) => x[0] - y[0]);
+      const merged: [number, number][] = [];
+      for (const q of iv) { const l = merged[merged.length - 1]; if (l && q[0] <= l[1] + 2.4) l[1] = Math.max(l[1], q[1]); else merged.push([q[0], q[1]]); }
+      for (const q of merged) {
+        if (tl > q[0] && tl < q[1]) {
+          const lo = q[0], hi = q[1];
+          const canLo = lo > lim[0] + 0.8, canHi = hi < lim[1] - 0.8;
+          // prefer the side I'm already on
+          if (canLo && (!canHi || r.l < (lo + hi) / 2)) tl = lo; else if (canHi) tl = hi; else tl = canLo ? lo : hi;
+        } else if (r.l > q[0] && r.l < q[1] && Math.abs(q[0] + q[1]) >= 0 && (tl <= q[0] || tl >= q[1])) { /* already steering around */ }
+      }
+    }
+  } else a.lateT -= dt;
+
+  tl = clamp(tl, lim[0] + 1.0, lim[1] - 1.0);
 
   // steer toward target lane
   const v = Math.max(10, r.v);

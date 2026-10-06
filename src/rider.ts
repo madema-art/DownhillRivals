@@ -292,6 +292,13 @@ function ride(r: Rider, inp: RiderInput, dt: number, ctx: Ctx, boostAcc: number)
       const d = Math.hypot(o.s - r.s, o.l - r.l);
       if (d < o.r + 0.5) {
         if (o.kind === 'barrier' && r.v < 14) return;
+        const depth = o.r + 0.5 - d;
+        if (depth < 0.55 && r.balance > 0.45) {   // glancing blow: scrape past instead of wiping out
+          const side = r.l >= o.l ? 1 : -1;
+          r.l += side * (0.55 - depth + 0.1); r.kl += side * 5; r.v *= 0.88; r.balance -= 0.4; r.stats.wallHits++;
+          ctx.emit('wall', r, 9); if (r.balance <= 0) crash(r, o.kind, 1, ctx);
+          return;
+        }
         r.v *= 0.7; crash(r, o.kind, 1.3, ctx);
       }
     });

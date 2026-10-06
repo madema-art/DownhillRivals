@@ -82,7 +82,7 @@ export class Race {
       else { inp = this.aiInputs[i]; aiThink(r, inp, this.ctx, dt); }
       if (!r.isPlayer || this.autoPlayer) {
         const d = r.s - ref;
-        const band = Math.max(-0.045, Math.min(0.09, -d / 1100));
+        const band = Math.max(-0.05, Math.min(0.12, -d / 800));
         r.paceMul = r.persona.pace * (1 + (r.isPlayer ? 0 : band));
       }
       if (r.finished) { inp = { ...inp, jump: false, boost: false, shoveL: false, shoveR: false, steer: 0, tuck: 0 }; }

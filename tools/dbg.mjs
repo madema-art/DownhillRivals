@@ -1,0 +1,15 @@
+import { chromium } from 'playwright';
+import { spawn } from 'node:child_process';
+const server = spawn('npx', ['vite', 'preview', '--port', '4173', '--strictPort'], { stdio: 'ignore' });
+await new Promise((r) => setTimeout(r, 2000));
+const browser = await chromium.launch({ executablePath: '/opt/pw-browsers/chromium-1194/chrome-linux/chrome', args: ['--use-angle=swiftshader', '--use-gl=angle', '--enable-unsafe-swiftshader', '--no-sandbox'] });
+const page = await browser.newPage({ viewport: { width: 960, height: 540 } });
+page.on('pageerror', (e) => console.log('PAGEERR', e.message));
+await page.goto('http://localhost:4173/'); await page.waitForFunction(() => window.__game);
+await page.click('#startBtn');
+await page.waitForFunction(() => window.__game.state().state === 'racing', null, { timeout: 40000 });
+await page.evaluate(() => { const g = window.__game; g.enableAuto(true); for (let i = 0; i < 120 * 140 && g.race.state !== 'done'; i++) g.race.step(); });
+console.log(await page.evaluate(() => JSON.stringify(window.__game.state())));
+await page.waitForTimeout(3000);
+console.log(await page.evaluate(() => JSON.stringify(window.__game.state())));
+await browser.close(); server.kill();

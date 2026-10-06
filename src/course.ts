@@ -161,6 +161,10 @@ export class Course {
     if (s > P.s0 && s < P.s1 && l < P.l1) y += 0.28 * Math.sin(s * 0.85) * Math.sin(l * 0.6 + 1) * ss((s - P.s0) / 8) * (1 - ss((s - P.s1 + 8) / 8));
     return y;
   }
+  rampAt(s: number, l: number): Ramp | null {
+    for (const r of this.ramps) if (s >= r.s0 - 0.5 && s <= r.s0 + r.len + 5 && l >= r.l0 - 0.6 && l <= r.l1 + 0.6) return r;
+    return null;
+  }
   /** > 1 drag multiplier for powder lane */
   dragMul(s: number, l: number) {
     const P = this.powder;
